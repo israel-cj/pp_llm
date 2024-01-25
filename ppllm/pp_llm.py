@@ -13,8 +13,8 @@ def possible_errors(e):
         consideration = ''
         if 'Cannot use mean strategy' in e or 'could not convert string to float' in e or 'non-numeric data' in e:
             consideration = """Consider calling the package 'ColumnTransformer', that is, first identify automatically all the categorical column names, automatically numeric column names and then add this step to the Pipeline 'pipe' with the original column names. e.g. the columns name can be detect as:  " \
-            numeric_columns_dataset = X_train.select_dtypes(include=[np.number]).columns
             categorical_columns_dataset = X_train.select_dtypes(include=['object']).columns
+            numeric_columns_dataset = X_train.select_dtypes(include=[np.number]).columns
                             """
         if 'missing values' in e or 'contains NaN' in e:
             consideration = 'Consider calling SimpleImputer to replace Nan values with the mean'
@@ -22,32 +22,30 @@ def possible_errors(e):
             consideration = 'Consider the error to see which package you did not call to create the Pipeline and add it this time'
         return consideration
 
-
 def get_prompt(
-        dataset_X=None, dataset_y=None, task='classification', **kwargs
+        X=None, y=None, task='classification', **kwargs
 ):
     if task == 'classification':
         metric_prompt = 'Log loss'
         additional_data = ''
-        additional_instruction_code = "If the model chosen accepts the parameter ‘probability’, this must always be changed to ‘probability=True’."
+        additional_instruction_code = " "
     else:
         metric_prompt = 'Mean Squared Error'
         additional_data = ''
-        additional_instruction_code = "If ‘f_regression’ will be used in the Pipeline, import the necessary packages"
-    similar_pipelines = TransferedPipelines(X_train=dataset_X, y_train=dataset_y, task=task, number_of_pipelines=3)
+        additional_instruction_code = ""
+    similar_pipelines = TransferedPipelines(X_train=X, y_train=y, task=task, number_of_pipelines=3)
     return f"""
-The dataframe split in ‘X_train’ and ‘y_train’ is loaded in memory.
-This code was written by an expert data scientist working to create a suitable pipeline (preprocessing techniques and estimator) for such dataframe, the task is ‘{task}’. It is a snippet of code that imports the packages necessary to create a ‘sklearn’ pipeline together with a description. This code takes inspiration from previous similar pipelines and their respective ‘{metric_prompt}’ which worked for a related dataframe. Those examples contain the word ‘Pipeline’ which refers to the preprocessing steps (optional) and model necessary, the word ‘data’ refers to ‘X_train’ and ‘y_train’ used during training, and finally ‘{metric_prompt}’ represents the performance of the model (the closes to 0 the better). The previous similar pipelines for this dataframe are:
-
+The dataframe ‘X_train’ is loaded in memory.
+This code was written by an expert data scientist working to create a suitable preprocessing pipeline for a dataframe. It is a snippet of code that imports the packages necessary to create a ‘sklearn’ preprocesing pipeline. This code takes inspiration from previous similar pipelines and their respective ‘{metric_prompt}’ which worked for a related dataframe. Those examples contain the word ‘data’, which refers to ‘X_train’. The previous similar pipelines for this dataframe are:
 “
 {similar_pipelines}
 “
+Your work is to create a pipeline for preprocessing (without estimator):
 
 Code formatting for each pipeline created:
 ```python
-(Import ‘sklearn’ packages to create a pipeline object called 'pipe'. In addition, call its respective 'fit' function to feed the model with 'X_train' and 'y_train'
-Along with the necessary packages, always call 'make_pipeline' from sklearn.
-Usually is good to start the pipeline using 'SimpleImputer' since ‘Nan’ values are not allowed in {task}). 
+(You MUST import all the libraries you will need (e.g., numpy, make_pipeline, SimpleImputer, etc.) to create a preprocessing pipeline object called 'preprocessing_pipe'. In addition, call its respective 'fit_transform' function to feed the model with 'X_train' (transformed_df = preprocessing_pipe.fit_transform(X_train))
+In addition, always called  SimpleImputer(strategy="median") at the END of the pipeline.
 {additional_instruction_code}
 ```end
 
@@ -60,28 +58,25 @@ Codeblock:
 # Each codeblock either generates {how_many} or drops bad columns (Feature selection).
 
 
-def build_prompt_from_df(dataset_X=None, dataset_y=None,
+def build_prompt_from_df(X=None, y=None,
         task='classification'):
 
     prompt, similar_pipelines = get_prompt(
-        dataset_X=dataset_X,
-        dataset_y=dataset_y,
+        X=X,
+        y=y,
         task=task,
     )
 
     return prompt, similar_pipelines
 
 
-def generate_features(
+def generate_dataset(
         X,
         y,
         model="gpt-3.5-turbo",
         just_print_prompt=False,
         iterative=1,
-        iterative_method="logistic",
         display_method="markdown",
-        n_splits=10,
-        n_repeats=2,
         task='classification',
         identifier = ""
 ):
@@ -98,8 +93,8 @@ def generate_features(
 
         display_method = print
     prompt, similar_pipelines = build_prompt_from_df(
-        dataset_X=X,
-        dataset_y=y,
+        X=X,
+        y=y,
         task=task,
     )
 
@@ -125,27 +120,32 @@ def generate_features(
     def execute_and_evaluate_code_block(code):
         if task == "classification":
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25,  stratify=y, random_state=0)
+            from sklearn.tree import DecisionTreeClassifier
+            model = DecisionTreeClassifier(random_state=0)
         else:
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=0)
+            from sklearn.tree import DecisionTreeRegressor
+            model = DecisionTreeRegressor(random_state=0)
         try:
-            pipe = run_llm_code(
+            transformed_df = run_llm_code(
                 code,
                 X_train,
                 y_train,
             )
-            performance = pipe.score(X_test, y_test)
+            model.fit(transformed_df, y_train)
+            performance = model.score(X_test, y_test)
         except Exception as e:
-            pipe = None
+            model = None
             display_method(f"Error in code execution. {type(e)} {e}")
             display_method(f"```python\n{format_for_display(code)}\n```\n")
             return e, None, None
 
-        return None, performance, pipe
+        return None, performance, model
 
     messages = [
         {
             "role": "system",
-            "content": "You are an expert datascientist assistant creating a Pipeline for a dataset X_train, y_train. You answer only by generating code. Answer as concisely as possible.",
+            "content": "You are an expert datascientist assistant creating a preprocessing Pipeline for a dataset X_train. You answer only by generating code. Let’s think step by step",
         },
         {
             "role": "user",
@@ -169,10 +169,10 @@ def generate_features(
 
         if isinstance(performance, float):
             valid_pipeline = True
-            pipeline_sentence = f"The code was executed and generated a ´pipe´ with score {performance}"
+            pipeline_sentence = f"The code was executed and generated a dataset transformed with score {performance}"
         else:
             valid_pipeline = False
-            pipeline_sentence = "The last code did not generate a valid ´pipe´, it was discarded."
+            pipeline_sentence = "The last code did not generate a valid preprocessing pipeline"
 
         display_method(
             "\n"
@@ -204,27 +204,17 @@ def generate_features(
                     Code: ```python{code}```\n. 
                     {general_considerations} \n
                     {additional_data} \n
-                    Generate the pipeline fixing the error, breathe and think deeply. \n:
+                    Generate the pipeline fixing the error, Let’s think step by step. \n:
                                 ```python
                                 """,
                 },
             ]
             continue
 
-
-        if task =='classification':
-            next_add_information = ''
-        if task =='regression':
-            next_add_information = "Call ‘f_regression’ if it will be used in the Pipeline"
-
         if e is None:
             list_codeblocks.append(code) # We are going to run this code if it is working
             list_performance.append(performance)
-            list_pipelines.append(pipe)
             print('The performance of this pipeline is: ', performance)
-            # # Get news similar_pipelines to explore more
-            # similar_pipelines = TransferedPipelines(X_train=X, y_train=y, task=task, number_of_pipelines=3)
-            # Get the current timestamp
             timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             # Write the data to a CSV file
             with open(f'pipelines_{identifier}.csv', 'a', newline='') as csvfile:
@@ -234,14 +224,13 @@ def generate_features(
                 {"role": "assistant", "content": code},
                 {
                     "role": "user",
-                    "content": f"""The pipeline "{pipe}" provided a score of "{performance}".  
+                    "content": f"""The preprocessing pipeline "{code}" provided a score of "{performance}".  
                     Again, here are the similar Pipelines:
                     "
                     {similar_pipelines}
                     "
-                    Generate the next Pipeline 'pipe' diverse and not identical to previous iterations. 
+                    Generate the next Pipeline, it should not be identical to previous iterations. 
                     Yet, you could take inspiration from the pipelines you have previously generated to improve them further (hyperparameter optimization). 
-                    Along with the necessary preprocessing packages and sklearn models, always call 'make_pipeline' from sklearn. {next_add_information}.
         Next codeblock:
         """,
                 },

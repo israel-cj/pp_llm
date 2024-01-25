@@ -2,6 +2,7 @@ import random
 import pickle
 import ott
 import gdown
+import re
 from ott.geometry import pointcloud
 from ott.solvers.quadratic import gromov_wasserstein, gromov_wasserstein_lr
 from ott.problems.quadratic import quadratic_problem
@@ -13,6 +14,27 @@ from scipy.sparse import isspmatrix
 
 from .data_automlbenchmark import data_automl
 from .data_automlbenchmark_regression import data_automl_regression
+
+def extract_preprocessing_from_pipe(whole_pipeline):
+    pipeline_string = whole_pipeline
+    # Find the indices of the first "(" and the second to last ")"
+    start_index = pipeline_string.find('(') + 1
+    indices = []
+    index = pipeline_string.rfind(')')
+
+    while index != -1:
+        indices.append(index)
+        index = pipeline_string.rfind(')', 0, index)
+    if len(indices) > 1:
+        indices = sorted(indices)
+        end_index = indices[-2]
+        # Extract the information between the indices
+        extracted_info = pipeline_string[start_index:end_index + 1]
+
+        return extracted_info
+    else:
+        return " "
+
 
 # computing the valur for optimal transport
 def compute_value_ot(X_train, y_train):
@@ -85,8 +107,8 @@ def TransferedPipelines(X_train, y_train, number_of_pipelines=5, task='classific
     else:
         # Look for the cost of each dataset vs the new dataset
         costs = []
-        #for geom_yy in list_geom_yy[:5]: # change this
-        for geom_yy in list_geom_yy:  # change this
+        for geom_yy in list_geom_yy[:5]: # change this
+        # for geom_yy in list_geom_yy:  # change this
             prob = ott.problems.quadratic.quadratic_problem.QuadraticProblem(geom_xx, geom_yy)
             try:
                 solver = gromov_wasserstein.GromovWasserstein(rank=6) # this is the proposal of prabhant
@@ -107,16 +129,18 @@ def TransferedPipelines(X_train, y_train, number_of_pipelines=5, task='classific
     for similar_datasets in names_other_similar_datasets:
         if similar_datasets == 'numerai28.6':
             similar_datasets = 'numerai28_6'
-        this_similar = automl_benchmark_data[similar_datasets][:2]
+        this_similar = automl_benchmark_data[similar_datasets][:3]
         most_similar_dataset += this_similar
 
     if len(most_similar_dataset) <= number_of_pipelines:
         this_list = most_similar_dataset
-        return '\n'.join(this_list)
+        this_list_preprocessing = [extract_preprocessing_from_pipe(element) for element in this_list] # Extract only the preprocessing steps
+        return '\n'.join(this_list_preprocessing)
     else:
         # Random pipelines to add exploration :)
         this_list = random.sample(most_similar_dataset, number_of_pipelines)
-        return '\n'.join(this_list)
+        this_list_preprocessing = [extract_preprocessing_from_pipe(element) for element in this_list]  # Extract only the preprocessing steps
+        return '\n'.join(this_list_preprocessing)
 
 if __name__=='__main__':
     import openml

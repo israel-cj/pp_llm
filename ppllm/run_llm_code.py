@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional
 import pandas as pd
 import ast
 
-def run_llm_code(code, X_train, y_train, pipe=None):
+def run_llm_code(code, X_train, y_train):
     """
     Executes the given code on the given dataframe and returns the resulting dataframe.
 
@@ -25,14 +25,14 @@ def run_llm_code(code, X_train, y_train, pipe=None):
         #output = {}
         #exec(code, None, output)
         # Use the resulting pipe object
-        pipe = output['pipe']
-        print(pipe)
+        transformed_df = output['transformed_df']
+        print(transformed_df)
 
     except Exception as e:
         print("Code could not be executed", e)
         raise (e)
 
-    return pipe
+    return transformed_df
 
 
 def run_llm_code_ensemble(code, X_train, y_train, list_pipelines, model=None):
