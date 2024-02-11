@@ -12,15 +12,15 @@ setup(
     url="https://github.com/israel-cj/LLM_AutoML.git",
     python_requires=">=3.10",
     install_requires=[
-        "openai==0.28.0",
+        "openai",
         "openml",
         "scikit-learn",
-        "mlxtend",
         "stopit",
         "ipython",
         "ott-jax",
         "dirty_cat",
         "gdown",
+        "mlxtend",
     ],
 )
 
