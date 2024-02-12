@@ -14,9 +14,12 @@ for task_id in tasks:
     datasetID = task.dataset_id
     benchmark_ids.append(datasetID)
 
+
 # task_id = 2073
 # task = openml.tasks.get_task(task_id)
 # datasetID = task.dataset_id
+# dataset_local = openml.datasets.get_dataset(datasetID) # 0 2073
+#####
 dataset_local = openml.datasets.get_dataset(benchmark_ids[8]) # Hard 41147
 print('dataset_local name', dataset_local.name)
 iterations = 4
@@ -61,7 +64,7 @@ print(f'probabilities: {probabilities}')
 #
 # iterations = 4
 # type_task = 'regression'
-# dataset = openml.datasets.get_dataset(benchmark_ids[0]) # 0 is equal to moneyball
+# dataset = openml.datasets.get_dataset(benchmark_ids[1]) # 0 is equal to moneyball
 # X, y, categorical_indicator, attribute_names = dataset.get_data(
 #     dataset_format="dataset", target=dataset.default_target_attribute
 # )

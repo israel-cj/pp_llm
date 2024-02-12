@@ -259,7 +259,7 @@ def generate_pipelines(
         messages_ensemble = [
             {
                 "role": "system",
-                "content": "You are an expert data science assistant who creates a pipeline with a different estimator compared to the one given",
+                "content": "You are an expert data science assistant who creates a pipeline with a different estimator compared to the one given. You answer only by generating code.",
             },
             {
                 "role": "user",

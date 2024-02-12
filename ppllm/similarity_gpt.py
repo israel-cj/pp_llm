@@ -57,7 +57,7 @@ def get_name(X, y, task='classification'):
     #     list_name_datasets = data_automl['classification']
     # else:
     #     list_name_datasets = data_automl['regression']
-
+    # prompt_mf = get_dataset_info(X, y[y.columns[0]], y.columns[0])
     prompt_mf = get_dataset_info(X, y, y.name)
     # data = query(
     #     {

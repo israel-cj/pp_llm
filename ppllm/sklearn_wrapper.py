@@ -51,7 +51,6 @@ class PP_LLM():
         # Generate a unique UUID
         original_y = y.copy()
         print('uid', self.uid)
-        y_name = y.name
         if self.task == "classification":
             y_ = y.squeeze() if isinstance(y, pd.DataFrame) else y
             self._label_encoder = LabelEncoder().fit(y_)
