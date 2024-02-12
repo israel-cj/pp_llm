@@ -79,8 +79,8 @@ def create_ensemble_sklearn_str(X, y, list_models_str, task):
 
     preprocessor = ColumnTransformer(
         transformers=[
-            ('ord', OrdinalEncoder(), ordinal_cols),
-            ('onehot', OneHotEncoder(), onehot_cols)
+            ('ord', OrdinalEncoder(handle_unknown='use_encoded_value', unknown_value=-1), ordinal_cols),
+            ('onehot', OneHotEncoder(handle_unknown='ignore'), onehot_cols)
         ])
 
     if task == "classification":

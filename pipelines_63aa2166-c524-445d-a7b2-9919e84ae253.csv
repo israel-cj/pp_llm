@@ -1,0 +1,11 @@
+2024-02-12 13:44:40,,"LinearSVR(RobustScaler(data), LinearSVR.C=20.0, LinearSVR.dual=False, LinearSVR.epsilon=0.01, LinearSVR.loss='squared_epsilon_insensitive', LinearSVR.tol=0.0001)",0.15793637671585514
+2024-02-12 13:44:46,,"from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import RobustScaler
+from sklearn.svm import SVR
+
+pipe = Pipeline([
+    ('scaler', RobustScaler(with_centering=False)),
+    ('estimator', SVR(C=1.0, epsilon=0.1))
+])
+
+pipe.fit(X_train, y_train)",0.10560395617088825

@@ -1,0 +1,59 @@
+2024-02-12 13:39:55,,"GradientBoostingClassifier(data, GradientBoostingClassifier.learning_rate=0.1, GradientBoostingClassifier.max_depth=4, GradientBoostingClassifier.max_features=0.15000000000000002, GradientBoostingClassifier.min_samples_leaf=17, GradientBoostingClassifier.min_samples_split=14, GradientBoostingClassifier.n_estimators=100, GradientBoostingClassifier.subsample=0.7500000000000001)",0.75
+2024-02-12 13:39:57,,"
+from sklearn.pipeline import make_pipeline
+from sklearn.svm import SVC
+
+pipe = make_pipeline(
+    SVC(
+        C=1.0,
+        kernel='rbf',
+        gamma='scale',
+        probability=True
+    )
+)
+
+pipe.fit(X_train, y_train)
+",0.7606382978723404
+2024-02-12 13:39:59,,"
+from sklearn.pipeline import make_pipeline
+from sklearn.svm import SVC
+
+pipe = make_pipeline(
+    SVC(
+        C=1.0,
+        kernel='rbf',
+        gamma='scale',
+        probability=True
+    )
+)
+
+pipe.fit(X_train, y_train)
+",0.7606382978723404
+2024-02-12 13:40:00,,"
+from sklearn.pipeline import make_pipeline
+from sklearn.linear_model import LogisticRegression
+
+pipe = make_pipeline(
+    LogisticRegression(
+        C=1.0,
+        solver='lbfgs',
+        max_iter=1000
+    )
+)
+
+pipe.fit(X_train, y_train)
+",0.7819148936170213
+2024-02-12 13:40:02,,"
+from sklearn.pipeline import make_pipeline
+from sklearn.svm import SVC
+
+pipe = make_pipeline(
+    SVC(
+        C=1.0,
+        kernel='rbf',
+        gamma='auto'
+    )
+)
+
+pipe.fit(X_train, y_train)
+",0.7021276595744681

@@ -59,7 +59,7 @@ print(f'probabilities: {probabilities}')
 #     datasetID = task.dataset_id
 #     benchmark_ids.append(datasetID)
 #
-# openai.api_key = ""
+# iterations = 4
 # type_task = 'regression'
 # dataset = openml.datasets.get_dataset(benchmark_ids[0]) # 0 is equal to moneyball
 # X, y, categorical_indicator, attribute_names = dataset.get_data(
@@ -69,14 +69,12 @@ print(f'probabilities: {probabilities}')
 # X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 #
 # ### Setup and Run LLM AutoML - This will be billed to your OpenAI Account!
-# automl = LLM_AutoML(
-#     # llm_model="gpt-3.5-turbo",
-#     llm_model="gpt-4",
+# automl = PP_LLM(
+#     llm_model="gpt-3.5-turbo",
+#     # llm_model="gpt-4",
 #     iterations=iterations,
 #     task=type_task,
 #     max_total_time=3600,
-#     do_stacking = False,
-#     # stacking_manually = True,
 #     )
 #
 # # The iterations happen here:

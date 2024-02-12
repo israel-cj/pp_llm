@@ -27,10 +27,16 @@ def run_llm_code_preprocessing(code, X_train, y_train, pipe=None):
     ordinal_cols = [col for col in categorical_cols if X_train[col].nunique() <= 2]
     onehot_cols = [col for col in categorical_cols if 2 < X_train[col].nunique() <= 10]
 
+    # preprocessor = ColumnTransformer(
+    #     transformers=[
+    #         ('ord', OrdinalEncoder(), ordinal_cols),
+    #         ('onehot', OneHotEncoder(), onehot_cols)
+    #     ])
+
     preprocessor = ColumnTransformer(
         transformers=[
-            ('ord', OrdinalEncoder(), ordinal_cols),
-            ('onehot', OneHotEncoder(), onehot_cols)
+            ('ord', OrdinalEncoder(handle_unknown='use_encoded_value', unknown_value=-1), ordinal_cols),
+            ('onehot', OneHotEncoder(handle_unknown='ignore'), onehot_cols)
         ])
 
     # Fit the preprocessor and transform the data
