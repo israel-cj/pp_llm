@@ -12,6 +12,8 @@ setup(
     url="https://github.com/israel-cj/pp_llm.git",
     python_requires=">=3.10",
     install_requires=[
+        "pandas",
+        "numpy",
         "openai",
         "openml",
         "scikit-learn",
