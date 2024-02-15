@@ -3,6 +3,7 @@ import numpy as np
 from typing import Any, Dict, Optional
 import pandas as pd
 import ast
+from scipy.sparse import issparse
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OrdinalEncoder, OneHotEncoder
 
@@ -17,10 +18,11 @@ def run_llm_code_preprocessing(code, X_train, y_train):
             transformers=[
                 ('ord', OrdinalEncoder(handle_unknown='use_encoded_value', unknown_value=-1), ordinal_cols),
                 ('onehot', OneHotEncoder(handle_unknown='ignore'), onehot_cols)
-            ])
+            ], sparse_threshold=0)
 
         # Fit the preprocessor and transform the data
         X_transformed = preprocessor.fit_transform(X_train)
+
     # X_transformed = pd.DataFrame(X_transformed, columns=ordinal_cols + onehot_cols)
     try:
         globals_dict = {'X_train': X_transformed, 'y_train': y_train}

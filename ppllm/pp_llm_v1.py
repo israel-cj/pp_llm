@@ -1,33 +1,24 @@
 import datetime
 import csv
 import time
-import random
+import openai
 from openai import OpenAI
 from sklearn.model_selection import train_test_split
 from .run_llm_code import run_llm_code_preprocessing
 from .similarity_gpt import get_name
-from .amlb_models import data_classification, data_regression
 
 client = OpenAI(api_key='')
 
 list_pipelines = []
 
-def get_code_from_name(X, y, task):
+def get_prompt(X, y, task='classification',
+        #name=None, **kwargs
+):
     name = get_name(X, y, task)
-    if task == 'classification':
-        try:
-            str_pipeline = data_classification[name][0]
-        except Exception as e:
-            print(e)
-            str_pipeline= data_classification[list(data_classification.keys())[random.randint(0, 70)]][0]
-    if task == 'regression':
-        try:
-            str_pipeline= data_regression[name][0]
-        except Exception as e:
-            print(e)
-            str_pipeline = data_regression[list(data_regression.keys())[random.randint(0, 30)]][0]
-    return str_pipeline
-
+    return f"""
+This is a {task} task. 
+The name of the dataset is {name}.
+    """
 
 def get_prompt_sklearn(code, task):
     return f"""
@@ -63,6 +54,7 @@ Each codeblock ends with "```end" and starts with "```python".
 Codeblock:
 """
 
+
 def generate_pipelines(
         X,
         y,
@@ -72,7 +64,7 @@ def generate_pipelines(
         iterations=4,
         task="classification",
         identifier=None,
-        ensemble=False,
+        just_print_prompt=False,
         y_origin= None
 ):
     global list_pipelines # To make it available to sklearn_wrapper in case the time out is reached
@@ -87,6 +79,29 @@ def generate_pipelines(
     else:
 
         display_method = print
+
+    prompt = get_prompt(
+        X,
+        y_origin,
+        task=task,
+        # name=name,
+    )
+
+    if just_print_prompt:
+        code, prompt = None, prompt
+        return code, prompt, None
+
+    def generate_code_warm_start(messages):
+        if model == "skip":
+            return ""
+
+        completion = client.chat.completions.create(
+            model= 'ft:gpt-3.5-turbo-0613:personal:amlb-only:8pJyh5vf', #finetune chatGPT3.5 amlb-only
+            messages=messages,
+            temperature=0.0,
+            max_tokens=1000,
+        )
+        return completion.choices[0].message.content
 
     def generate_code(messages):
         if model == "skip":
@@ -117,13 +132,10 @@ def generate_pipelines(
         return code
 
     def execute_and_evaluate_code_block(code):
-        train_size = 0.75
-        if len(X)>100000:
-            train_size = 0.25
         if task == "classification":
-            X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=train_size,  stratify=y, random_state=0)
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25,  stratify=y, random_state=0)
         else:
-            X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=train_size, random_state=0)
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=0)
         try:
             pipe = run_llm_code_preprocessing(
                 code,
@@ -139,11 +151,40 @@ def generate_pipelines(
 
         return None, performance, pipe
 
+    messages = [
+        {
+            "role": "system",
+            "content": "You are an expert datascientist assistant creating a pipeline for dataset given only the name and type of task",
+        },
+        {
+            "role": "user",
+            "content": prompt,
+        },
+    ]
     display_method(f"*Dataset with specific description, task:*\n {task}")
     list_codeblocks = []
     list_performance = []
 
-    code = get_code_from_name(X, y_origin, task)
+    for counter_working_model in range(4):
+        try:
+            code = generate_code_warm_start(messages)
+            e = None
+        except Exception as e:
+            display_method("Error in LLM API." + str(e))
+            time.sleep(60)  # Wait 1 minute before next request
+
+        if e is not None:
+            messages += [
+                {"role": "assistant", "content": code},
+                {
+                    "role": "user",
+                    "content": f"""Code execution failed with error: {type(e)} {e}.\n Code: ```python{code}```\n Generate again (fixing error?):
+                                            ```python
+                                            """,
+                },
+            ]
+        if e is None:
+            break
 
     messages_sklearn = [
         {
@@ -213,7 +254,6 @@ def generate_pipelines(
             writer = csv.writer(csvfile)
             writer.writerow([timestamp, name, code, str(performance)])
 
-    if ensemble == True:
         print("Lets create the ensemble")
         counter_models = 0
         messages_ensemble = [

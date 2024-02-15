@@ -75,7 +75,7 @@ def create_ensemble_sklearn_str(X, y, list_models_str, task):
             transformers=[
                 ('ord', OrdinalEncoder(handle_unknown='use_encoded_value', unknown_value=-1), ordinal_cols),
                 ('onehot', OneHotEncoder(handle_unknown='ignore'), onehot_cols)
-            ])
+            ], sparse_threshold=0)
 
     if task == "classification":
         ensemble = StackingClassifier(

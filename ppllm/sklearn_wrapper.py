@@ -74,9 +74,10 @@ class PP_LLM():
                     identifier=self.uid,
                     y_origin = original_y,
                 )
-            if len(list_pipelines)>0:
+            if len(list_pipelines)==1:
                 index_best_pipeline = list_performance_pipelines.index(max(list_performance_pipelines))
                 self.pipe = list_pipelines[index_best_pipeline] # We get at least 1 pipeline to return
+            if len(list_pipelines)<1:
                 # self.pipe = create_ensemble_sklearn(list_pipelines, self.task)
                 self.pipe = create_ensemble_sklearn_str(X, y, list_codeblocks_generated, self.task)
                 # self.pipe.fit(X, y)
